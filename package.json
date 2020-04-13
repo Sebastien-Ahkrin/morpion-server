@@ -1,0 +1,28 @@
+{
+  "name": "morpion-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src",
+  "scripts": {
+    "test": "jest --coverage --detectOpenHandles",
+    "start": "node src/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sebastien-Ahkrin/morpion-server.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Sebastien-Ahkrin/morpion-server/issues"
+  },
+  "homepage": "https://github.com/Sebastien-Ahkrin/morpion-server#readme",
+  "dependencies": {
+    "apidoc": "^0.20.1",
+    "fastify": "^2.13.1",
+    "uuidv4": "^6.0.7"
+  },
+  "devDependencies": {
+    "jest": "^25.3.0"
+  }
+}
