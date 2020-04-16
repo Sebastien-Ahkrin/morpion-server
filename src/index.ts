@@ -1,7 +1,9 @@
-const fastify = require('fastify')({ logger: true })
+import fastifyImport from 'fastify'
 
-const GameListener = require('./listener')
-const Game = require('./game')
+import GameManager from './listener'
+import Game from './game'
+
+const fastify = fastifyImport({ logger: true })
 
 /**
  * @api {get} /games/create/:playerOne Create a room to start playing
@@ -14,10 +16,12 @@ const Game = require('./game')
  * @apiSuccess {String} uuid The id of this room.
  */
 fastify.get('/games/create', (request, response) => {
-  const { playerOne } = response.params
-  const game = new Game(playerOne, '')
-  const id = GameListener.addGame(game)
+  const { playerOne } = request.params
+  
+  const game = new Game()
+  game.addPlayer(playerOne)
 
+  const id = GameManager.addGame(game)
   response.send({ status: 'room created', uuid: id }).status(200)
 })
 
@@ -33,16 +37,17 @@ fastify.get('/games/create', (request, response) => {
  */
 fastify.get('/games/:uuid/join/:player', (request, response) => {
   const { uuid, player } = request.params
-  const room = GameListener.getGame(uuid)
+  const room = GameManager.getGameById(uuid)
 
   if (room === undefined) {
-    return response.send({ status: 'room not found' }).status(404)
+    response.send({ status: 'room not found' }).status(404)
+    return
   }
 
-  const [, game] = room
+  const { game } = room
   game.addPlayer(player)
 
-  return response.send({ status: 'Player added' }).status(200)
+  response.send({ status: 'Player added' }).status(200)
 })
 
 /**
@@ -53,7 +58,7 @@ fastify.get('/games/:uuid/join/:player', (request, response) => {
  * @apiSuccess {Array} A list of every rooms.
  */
 fastify.get('/games', (_, response) => {
-  response.send(GameListener.getGames()).status(200)
+  response.send(GameManager.games).status(200)
 })
 
 /**
@@ -70,15 +75,16 @@ fastify.get('/games', (_, response) => {
  */
 fastify.get('/games/:uuid/:line/:column/:pawn', (request, response) => {
   const { uuid, line, column, pawn } = request.params
-  const room = GameListener.getGame(uuid)
+  const room = GameManager.getGameById(uuid)
 
   if (room === undefined) {
-    return response.send({ status: 'room not found' }).status(404)
+    response.send({ status: 'room not found' }).status(404)
+    return
   }
 
-  const [, game] = room
+  const { game } = room
   game.move(line, column, pawn)
-  return response.status(200)
+  response.status(200)
 })
 
 /**
@@ -93,14 +99,15 @@ fastify.get('/games/:uuid/:line/:column/:pawn', (request, response) => {
  */
 fastify.get('/games/:uuid', (request, response) => {
   const { uuid } = request.params
-  const room = GameListener.getGame(uuid)
+  const room = GameManager.getGameById(uuid)
 
   if (room === undefined) {
-    return response.send({ status: 'room not found' }).status(404)
+    response.send({ status: 'room not found' }).status(404)
+    return
   }
 
-  const [, game] = room
-  return response.send({ status: game._board }).status(200)
+  const { game } = room
+  response.send({ status: game }).status(200)
 })
 
 /**
@@ -115,14 +122,15 @@ fastify.get('/games/:uuid', (request, response) => {
  */
 fastify.delete('/games/:uuid', (request, response) => {
   const { uuid } = request.params
-  const room = GameListener.getGame(uuid)
+  const room = GameManager.getGameById(uuid)
 
   if (room === undefined) {
-    return response.send({ status: 'room not found' }).status(404)
+    response.send({ status: 'room not found' }).status(404)
+    return
   }
 
-  GameListener.removeGame(uuid)
-  return response.send({ status: 'success' }).send(200)
+  GameManager.removeGameById(uuid)
+  response.send({ status: 'success' }).send(200)
 })
 
 /**
@@ -137,25 +145,24 @@ fastify.delete('/games/:uuid', (request, response) => {
  */
 fastify.get('/games/:uuid/win', (request, response) => {
   const { uuid } = request.params
-  const room = GameListener.getGame(uuid)
+  const room = GameManager.getGameById(uuid)
 
   if (room === undefined) {
-    return response.send({ status: 'room not found' }).status(404)
+    response.send({ status: 'room not found' }).status(404)
+    return
   }
 
-  const [, game] = room
-  return response.send({ status: game.win() }).status(200)
+  const { game } = room
+  response.send({ status: game.isWin() }).status(200)
 })
 
 async function start () {
   try {
     await fastify.listen(8080)
   } catch (error) {
-    fastify.log.error(err)
+    fastify.log.error(error)
     process.exit(1)
   }
 }
 
 start()
-
-module.exports = fastify
